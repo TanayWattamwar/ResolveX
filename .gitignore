@@ -1,0 +1,23 @@
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+.idea/
+.vscode/
+**/target/
+**/node_modules/
+**/dist/
+coverage/
+*.zip
+.env.local
+.env.production
+# Local databases and backups
+*.sql
+*.dump
+*.bak
+
+# IDE and OS files
+*.iml
+Thumbs.db
+Desktop.ini

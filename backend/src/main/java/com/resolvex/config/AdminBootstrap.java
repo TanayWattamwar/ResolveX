@@ -1,0 +1,5 @@
+package com.resolvex.config;
+import com.resolvex.entity.*;import com.resolvex.repository.UserRepository;import org.springframework.beans.factory.annotation.Value;import org.springframework.boot.CommandLineRunner;import org.springframework.context.annotation.Bean;import org.springframework.context.annotation.Configuration;import org.springframework.security.crypto.password.PasswordEncoder;
+@Configuration public class AdminBootstrap {
+ @Bean CommandLineRunner createInitialAdmin(UserRepository users,PasswordEncoder encoder,@Value("${BOOTSTRAP_ADMIN_EMAIL:}") String email,@Value("${BOOTSTRAP_ADMIN_PASSWORD:}") String password,@Value("${BOOTSTRAP_ADMIN_NAME:ResolveX Admin}") String name){return args->{if(email!=null&&!email.isBlank()&&password!=null&&!password.isBlank()&&!users.existsByEmail(email.toLowerCase())){if(password.length()<12)throw new IllegalStateException("BOOTSTRAP_ADMIN_PASSWORD must be at least 12 characters");User admin=new User();admin.setName(name);admin.setEmail(email.toLowerCase());admin.setPassword(encoder.encode(password));admin.setRole(Role.ADMIN);users.save(admin);System.out.println("ResolveX initial admin account created.");}};}
+}

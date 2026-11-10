@@ -10,7 +10,8 @@ public class ApiDtos {
     public record AuthResponse(String token, Long id, String name, String email, Role role) {}
     public record CreateTicketRequest(@NotBlank @Size(max=140) String title, @NotBlank @Size(max=4000) String description, @NotBlank String category, TicketPriority priority) {}
     public record UpdateTicketRequest(TicketStatus status, TicketPriority priority, Long assigneeId, LocalDateTime dueAt,
-                                      @Size(max=4000) String resolutionNotes, @Size(max=2000) String rootCause) {}
+                                      @Size(max=4000) String resolutionNotes, @Size(max=2000) String rootCause,
+                                      Boolean unassignAssignee) {}
     public record UserResponse(Long id, String name, String email, Role role) {}
     public record TicketResponse(Long id, String title, String description, String category, TicketPriority priority,
                                  TicketStatus status, UserResponse requester, UserResponse assignee, LocalDateTime createdAt,

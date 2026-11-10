@@ -7,6 +7,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
@@ -68,14 +70,25 @@ public class TicketService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only an administrator or the assigned engineer can update this ticket");
         }
 
-        if (!admin && (r.assigneeId() != null || r.priority() != null || r.dueAt() != null)) {
+        if (!admin && (r.assigneeId() != null || Boolean.TRUE.equals(r.unassignAssignee()) || r.priority() != null || r.dueAt() != null)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Engineers cannot change assignment, priority or SLA deadlines");
         }
 
-        if (r.assigneeId() != null) {
+        boolean assignmentChanged = false;
+        if (Boolean.TRUE.equals(r.unassignAssignee())) {
+            if (r.assigneeId() != null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Choose either an engineer or unassign the ticket");
+            }
+            if (t.getAssignee() != null) {
+                String previousAssignee = t.getAssignee().getName();
+                t.setAssignee(null);
+                assignmentChanged = true;
+                history.save(new TicketHistory(t, actor, "Unassigned from " + previousAssignee));
+            }
+        } else if (r.assigneeId() != null && (t.getAssignee() == null || !t.getAssignee().getId().equals(r.assigneeId()))) {
             User assignee = users.findById(r.assigneeId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Assignee not found"));
             if (assignee.getRole() != Role.ENGINEER) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Assignee must have ENGINEER role");
-            t.setAssignee(assignee);
+            t.setAssignee(assignee); assignmentChanged = true;
             history.save(new TicketHistory(t, actor, "Assigned to " + assignee.getName()));
         }
         if (r.priority() != null && r.priority() != t.getPriority()) {
@@ -111,7 +124,30 @@ public class TicketService {
         }
 
         Ticket saved = tickets.save(t);
-        mail.ticketUpdated(saved);
+
+        // Send notifications only after the database transaction commits.
+        // This keeps SMTP latency outside the period in which ticket rows are locked.
+        final Long ticketId = saved.getId();
+        final String ticketTitle = saved.getTitle();
+        final String ticketStatus = saved.getStatus().toString();
+        final String requesterEmail = saved.getRequester() == null ? null : saved.getRequester().getEmail();
+        final String assigneeEmail = saved.getAssignee() == null ? null : saved.getAssignee().getEmail();
+        final boolean assignmentWasChanged = assignmentChanged;
+
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    String subject = "ResolveX ticket #" + ticketId + " updated";
+                    String body = "Your ticket '" + ticketTitle + "' is now " + ticketStatus + ".";
+                    mail.notify(requesterEmail, subject, body);
+                    if (assignmentWasChanged && assigneeEmail != null) {
+                        mail.notify(assigneeEmail, "ResolveX ticket #" + ticketId + " assigned to you",
+                                "Ticket '" + ticketTitle + "' has been assigned to you. Please sign in to ResolveX to review it.");
+                    }
+                }
+            });
+        }
         return dto(saved);
     }
 

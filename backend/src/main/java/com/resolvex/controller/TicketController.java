@@ -3,7 +3,11 @@ import com.resolvex.dto.ApiDtos.*;import com.resolvex.service.TicketService;impo
 @RestController @RequestMapping("/api") public class TicketController{
  private final TicketService service;public TicketController(TicketService s){service=s;}
  @GetMapping("/tickets") public List<TicketResponse> list(Authentication a){return service.list(a.getName());}
- @PostMapping("/tickets") public TicketResponse create(@Valid @RequestBody CreateTicketRequest r,Authentication a){return service.create(r,a.getName());}
+ @GetMapping("/tickets/{id}")
+public TicketResponse get(@PathVariable Long id, Authentication a) {
+    return service.getTicket(id, a.getName());
+}
+@PostMapping("/tickets") public TicketResponse create(@Valid @RequestBody CreateTicketRequest r,Authentication a){return service.create(r,a.getName());}
  @PatchMapping("/tickets/{id}") public TicketResponse update(@PathVariable Long id,@Valid @RequestBody UpdateTicketRequest r,Authentication a){return service.update(id,r,a.getName());}
  @GetMapping("/tickets/{id}/history") public List<HistoryResponse> history(@PathVariable Long id,Authentication a){return service.getHistory(id,a.getName());}
  @GetMapping("/dashboard") public DashboardResponse dashboard(Authentication a){return service.dashboard(a.getName());}

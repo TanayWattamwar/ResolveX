@@ -46,7 +46,23 @@ public class TicketService {
     }
 
     @Transactional
-    public TicketResponse create(CreateTicketRequest r, String email) {
+    public TicketResponse getTicket(Long id, String email) {
+    User actor = user(email);
+    Ticket ticket = get(id);
+
+    boolean requester = ticket.getRequester() != null
+            && ticket.getRequester().getId().equals(actor.getId());
+
+    if (!isAdmin(actor) && !requester && !isAssignedEngineer(actor, ticket)) {
+        throw new ResponseStatusException(
+                HttpStatus.FORBIDDEN,
+                "You cannot view this ticket"
+        );
+    }
+
+    return dto(ticket);
+}
+public TicketResponse create(CreateTicketRequest r, String email) {
         User actor = user(email);
         Ticket t = new Ticket();
         t.setTitle(r.title().trim()); t.setDescription(r.description().trim()); t.setCategory(r.category());

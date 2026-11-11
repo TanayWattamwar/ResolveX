@@ -1,4 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="16" fill="#62D6B3"/>
-  <path d="M18 16h28a8 8 0 0 1 0 16H34l14 16H35L20 32V48h-8V16h6zm2 8v8h24a4 4 0 0 0 0-8H20z" fill="#102638"/>
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="15" fill="#5BD4B1"/>
+  <text x="32" y="46" text-anchor="middle"
+        font-family="Arial, sans-serif"
+        font-size="43" font-weight="600"
+        fill="#102638">⌘</text>
 </svg>
